@@ -1,0 +1,2 @@
+pyserial2
+pynmeagps
