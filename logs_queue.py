@@ -1,5 +1,6 @@
 import random
 import json
+import zlib
 from uart_test import get_loc
 
 class ListNode:
@@ -51,20 +52,32 @@ class Queue:
 
 
     def get(self):
+        # if the rapsi just started up and has nothing
+        res = json.dumps({'type': None,
+                        'frequency': None,
+                        'location': None})
+
         if self.head:
             data = self.head
             self.head = self.head.next
             self.ct -= 1
 
             # (type, frequency, location)
-            return json.dumps({'type': data.jamming_type,
+            res = json.dumps({'type': data.jamming_type,
                         'frequency': (str(data.freq) + ' MHz' if data.freq else None),
                         'location': data.loc})
 
-        # if the rapsi just started up and has nothing
-        return json.dumps({'type': None,
-                        'frequency': None,
-                        'location': None})
+        
+        # convert to transceiver message change command
+
+        data_len = f'{len(res):02x}'.upper()
+        content = content = 'ES+W22FB' + data_len + res
+
+        crc = zlib.crc32(content.encode('utf-8'))
+        crc = hex(crc)[2:].upper()
+
+        # return res
+        return content + ' ' + crc
 
 
 random.seed(12345)

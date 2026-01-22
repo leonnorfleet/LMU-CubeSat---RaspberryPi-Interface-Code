@@ -76,12 +76,18 @@ def b_xfer():
             s, c, d = pi.bsc_xfer(bsc_control, b'')
 
             if c > 0:
+                '''
+                ##### TRANSCEIVER I2C MESSAGE FORMAT #####
+                ES+W22FB + length of log data + log data + ' ' + CRC32/ISO-HDLC
+                '''
+
                 recv = d.decode(errors='ignore')
                 print('received:', recv)
 
                 if recv and recv[0] == 'R':
                     if not msg:
                         log_data = (logs.get() + '|').encode('utf-8')
+                        print(log_data)
                         msg = log_data + b'\0'
 
                     tx = msg[:chunk_size]
