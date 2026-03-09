@@ -1,9 +1,9 @@
 import random
 import json
 import zlib
-from uart_test import get_loc
+from uart import get_loc
 
-class ListNode:
+class Log:
     def __init__(self, type=0, freq=None, loc=None):
         self.jamming_type = type
         self.freq = freq
@@ -21,7 +21,7 @@ class Queue:
         freq_type = random.randint(0, 3)
         
         if freq_type == 0:
-            entry = ListNode(freq_type)
+            entry = Log(freq_type)
         else:
             # frequency is in MHz
             # type is the waveform type
@@ -30,10 +30,13 @@ class Queue:
 
             frequency = random.uniform(200, 1000)
 
+            # print('start of sus block')
             lat, long = get_loc()
             location = f'{lat}, {long}'
+            # print(location)
 
-            entry = ListNode(freq_type, frequency, location)
+            entry = Log(freq_type, frequency, location)
+            # print('end of sus block')
 
         if self.ct == self.capacity:
             self.head = self.head.next
@@ -67,6 +70,7 @@ class Queue:
                         'frequency': (str(data.freq) + ' MHz' if data.freq else None),
                         'location': data.loc})
 
+        # return res
         
         # convert to transceiver message change command
 
@@ -76,7 +80,7 @@ class Queue:
         crc = zlib.crc32(content.encode('utf-8'))
         crc = hex(crc)[2:].upper()
 
-        # return res
+        
         return content + ' ' + crc
 
 

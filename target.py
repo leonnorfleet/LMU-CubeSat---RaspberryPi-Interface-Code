@@ -3,7 +3,7 @@
 import time
 import pigpio
 from logs_queue import *
-from uart_test import port
+from uart import port
 
 I2C_ADDR=0x13
 
@@ -19,6 +19,7 @@ if not pi.connected:
 if the aardvark randomly breaks just unplug everything and check the pins
 '''
 
+# OBSOLETE FUNCTION, DO NOT USE FOR I2C Transactions
 def i2c(id, tick):
     global pi
 
@@ -34,6 +35,7 @@ def i2c(id, tick):
             pi.bsc_i2c(I2C_ADDR, '12345678123456781234567812345678')          
 
 
+# OBSOLETE FUNCTION, DO NOT USE FOR I2C Transactions
 def b_i2c():
     # Respond to BSC target activity
 
@@ -62,8 +64,8 @@ def b_xfer():
 
     msg = b''
     chunk_size = 16
-    
 
+    start = time.time()
     print('Listening on address 0x13 as I2C target..')
 
     try:
@@ -73,7 +75,7 @@ def b_xfer():
                 logs.insert()
                 t = time.time()
 
-            s, c, d = pi.bsc_xfer(bsc_control, b'')
+            s, c, d = pi.bsc_xfer(bsc_control, b'') # _, num bytes, data
 
             if c > 0:
                 '''
@@ -84,23 +86,45 @@ def b_xfer():
                 recv = d.decode(errors='ignore')
                 print('received:', recv)
 
-                if recv and recv[0] == 'R':
-                    if not msg:
-                        log_data = (logs.get() + '|').encode('utf-8')
-                        print(log_data)
-                        msg = log_data + b'\0'
+                if recv:
+                    if recv[0] == 'R': # send CubeSat a jamming log
+                        if not msg:
+                            log_data = (logs.get() + '|').encode('utf-8')
+                            print(log_data)
+                            msg = log_data + b'\0'
 
-                    tx = msg[:chunk_size]
-                    msg = msg[chunk_size:]
+                        tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
+                        msg = msg[chunk_size:] # the rest of the message, will be sent when R is received again
 
-                    if not tx:
-                        tx = b'\0' * chunk_size
+                        if not tx: # bytes smaller than buffer, pad with null bytes so there are no read issues
+                            tx = b'\0' * chunk_size
 
-                    # Make sure tx is exactly chunk_size
-                    if len(tx) < chunk_size:
-                        tx += b'\0' * (chunk_size - len(tx))
+                        # Make sure tx is exactly chunk_size
+                        if len(tx) < chunk_size:
+                            tx += b'\0' * (chunk_size - len(tx))
+                            print('end transmission')
 
-                    pi.bsc_xfer(bsc_control, tx)
+                        pi.bsc_xfer(bsc_control, tx)
+
+                    elif recv[0] == 'T': # send CubeSat current runtime (basic telemetry)
+                        if not msg:
+                            msg = (str(time.time() - start) + '|')
+                            print(msg)
+                            msg = msg.encode('utf-8')
+                            msg = msg + b'\0'
+
+                        tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
+                        msg = msg[chunk_size:] # the rest of the message, will be sent when T is received again
+
+                        if not tx: # bytes smaller than buffer, pad with null bytes so there are no read issues
+                            tx = b'\0' * chunk_size
+
+                        # Make sure tx is exactly chunk_size
+                        if len(tx) < chunk_size:
+                            tx += b'\0' * (chunk_size - len(tx))
+                            print('end transmission')
+
+                        pi.bsc_xfer(bsc_control, tx)
 
             time.sleep(0.02)
 
@@ -111,3 +135,4 @@ def b_xfer():
 
 
 b_xfer()
+# b_i2c()

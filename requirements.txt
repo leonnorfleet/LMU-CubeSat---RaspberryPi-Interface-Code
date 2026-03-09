@@ -1,2 +1,3 @@
-pyserial2
-pynmeagps
+pigpio==1.78
+pynmeagps==1.0.55
+pyserial==3.5
