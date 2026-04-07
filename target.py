@@ -87,51 +87,24 @@ def b_xfer():
                 print('received:', recv)
 
                 if recv:
-                    
-                        
-                    if recv[0] == 'R': # send CubeSat a jamming log
+                    if recv[0] not in {'R', 'T', 'C'}:
+                        pass
+                    else:
                         if not msg:
-                            log_data = (logs.get() + '|').encode('utf-8')
-                            print(log_data)
-                            msg = log_data + b'\0'
+                            if recv[0] == 'R': # send CubeSat a jamming log
+                                log_data = (logs.get() + '|').encode('utf-8')
+                                print(log_data)
+                                msg = log_data + b'\0'
 
-                        tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
-                        msg = msg[chunk_size:] # the rest of the message, will be sent when R is received again
+                            elif recv[0] == 'T': # send CubeSat current runtime (basic telemetry)
+                                msg = (f"{int(time.time() - start)}" + '|')
+                                print(msg)
+                                msg = msg.encode('utf-8')
+                                msg = msg + b'\0'
 
-                        if not tx: # bytes smaller than buffer, pad with null bytes so there are no read issues
-                            tx = b'\0' * chunk_size
-
-                        # Make sure tx is exactly chunk_size
-                        if len(tx) < chunk_size:
-                            tx += b'\0' * (chunk_size - len(tx))
-                            print('end transmission')
-
-                        pi.bsc_xfer(bsc_control, tx)
-
-                    elif recv[0] == 'T': # send CubeSat current runtime (basic telemetry)
-                        if not msg:
-                            msg = (f"{int(time.time() - start)}" + '|')
-                            print(msg)
-                            msg = msg.encode('utf-8')
-                            msg = msg + b'\0'
-
-                        tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
-                        msg = msg[chunk_size:] # the rest of the message, will be sent when T is received again
-
-                        if not tx: # bytes smaller than buffer, pad with null bytes so there are no read issues
-                            tx = b'\0' * chunk_size
-
-                        # Make sure tx is exactly chunk_size
-                        if len(tx) < chunk_size:
-                            tx += b'\0' * (chunk_size - len(tx))
-                            print('end transmission')
-
-                        pi.bsc_xfer(bsc_control, tx)
-
-                    elif recv[0] == 'C':
-                        if not msg:
-                            cmd = (get_crc(recv[1:]) = '|').encode('utf-8')
-                            msg = cmd + b'\0'
+                            elif recv[0] == 'C':
+                                cmd = (recv[1:] + get_crc(recv[1:]) + '|').encode('utf-8')
+                                msg = cmd + b'\0'
 
                         tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
                         msg = msg[chunk_size:] # the rest of the message, will be sent when T is received again
