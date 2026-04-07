@@ -3,6 +3,15 @@ import json
 import zlib
 from uart import get_loc
 
+def get_crc(msg):
+    data_len = f'{len(msg):02x}'
+    content = 'ES+W22FB' + data_len + msg
+
+    crc = zlib.crc32(content.encode('utf-8'))
+    crc = hex(crc)[2:].upper()
+    
+    return f'{content} {crc}\r'
+
 class Log:
     def __init__(self, type=0, freq=None, loc=None):
         self.jamming_type = type
@@ -70,18 +79,20 @@ class Queue:
                         'frequency': (str(data.freq) + ' MHz' if data.freq else None),
                         'location': data.loc})
 
-        # return res
+        # return res # this is for testing/if i decide to CRC32 in MPLAB instead
         
         # convert to transceiver message change command
 
-        data_len = f'{len(res):02x}'.upper()
+        return get_crc(res)
+
+        data_len = f'{len(res):02x}'
         content = content = 'ES+W22FB' + data_len + res
 
         crc = zlib.crc32(content.encode('utf-8'))
         crc = hex(crc)[2:].upper()
 
         
-        return content + ' ' + crc
+        return f'{content} {crc}\r'
 
 
 random.seed(12345)
