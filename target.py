@@ -87,7 +87,7 @@ def b_xfer():
                 print('received:', recv)
 
                 if recv:
-                    if recv[0] not in {'R', 'T', 'C'}:
+                    if recv[0] not in {'R', 'T'}:
                         pass
                     else:
                         if not msg:
@@ -97,14 +97,9 @@ def b_xfer():
                                 msg = log_data + b'\0'
 
                             elif recv[0] == 'T': # send CubeSat current runtime (basic telemetry)
-                                msg = (f"{int(time.time() - start)}" + '|')
-                                print(msg)
-                                msg = msg.encode('utf-8')
-                                msg = msg + b'\0'
-
-                            elif recv[0] == 'C':
-                                cmd = (recv[1:] + get_crc(recv[1:]) + '|').encode('utf-8')
-                                msg = cmd + b'\0'
+                                runtime = (f"{int(time.time() - start)}" + '|').encode('utf-8')
+                                print(runtime)
+                                msg = runtime + b'\0'
 
                         tx = msg[:chunk_size] # the 16 bytes that fit in the buffer
                         msg = msg[chunk_size:] # the rest of the message, will be sent when T is received again

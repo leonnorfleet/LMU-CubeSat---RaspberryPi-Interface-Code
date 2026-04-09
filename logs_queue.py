@@ -85,14 +85,5 @@ class Queue:
 
         return get_crc(res)
 
-        data_len = f'{len(res):02x}'
-        content = content = 'ES+W22FB' + data_len + res
-
-        crc = zlib.crc32(content.encode('utf-8'))
-        crc = hex(crc)[2:].upper()
-
-        
-        return f'{content} {crc}\r'
-
 
 random.seed(12345)
